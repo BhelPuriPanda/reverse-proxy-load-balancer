@@ -49,7 +49,7 @@ func LoggingMiddleware(next http.Handler) http.Handler {
 		duration := time.Since(start)
 
 		// Retrieve the selected backend URL from the request context (populated during ServeHTTP)
-		backend := "none"
+		backend := "None"
 		if val := r.Context().Value(SelectedBackendKey); val != nil {
 			backend = val.(string)
 		}
