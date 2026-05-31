@@ -6,6 +6,7 @@
 package main
 
 import (
+	"context"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
@@ -86,7 +87,9 @@ func (s *ServerPool) MarkBackendStatus(backendURL *url.URL, alive bool) {
 func (s *ServerPool) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	peer := s.GetNextPeer()
 	if peer != nil {
-		peer.ReverseProxy.ServeHTTP(w, r)
+		// Populate the selected backend target address inside the request context for logging
+		ctx := context.WithValue(r.Context(), SelectedBackendKey, peer.URL.String())
+		peer.ReverseProxy.ServeHTTP(w, r.WithContext(ctx))
 		return
 	}
 	http.Error(w, "Service Unavailable", http.StatusServiceUnavailable)
