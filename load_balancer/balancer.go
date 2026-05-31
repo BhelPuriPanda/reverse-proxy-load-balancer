@@ -1,6 +1,12 @@
+//THIS FILE CONTAINS THE LOGIC FOR THE LOAD BALANCER IMPLEMENTATION.
+//it uses a round-robbin algorithm to distribute the traffic among the backend servers
+//checks and sets the health status of the backend servers concurrently using go routines.
+//if a server is down, it will be removed from the pool and will not be served requests.
+
 package main
 
 import (
+	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"sync"
@@ -73,4 +79,15 @@ func (s *ServerPool) MarkBackendStatus(backendURL *url.URL, alive bool) {
 			break
 		}
 	}
+}
+
+// ServeHTTP implements the http.Handler interface. It retrieves the next healthy backend peer
+// via GetNextPeer() and routes the client request to its corresponding reverse proxy.
+func (s *ServerPool) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	peer := s.GetNextPeer()
+	if peer != nil {
+		peer.ReverseProxy.ServeHTTP(w, r)
+		return
+	}
+	http.Error(w, "Service Unavailable", http.StatusServiceUnavailable)
 }
